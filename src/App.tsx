@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react'
-import Header from './components/Header'
+import { useSelector, useDispatch } from 'react-redux'
+import { RootState, AppDispatch } from './store'
 import Produtos from './containers/Produtos'
-
+import { toggleFavorito } from './store/reducers/favoritos'
+import { adicionar } from './store/reducers/carrinho'
+import { useGetProdutosQuery } from './services/api'
+import Header from './components/Header'
 import { GlobalStyle } from './styles'
 
 export type Produto = {
@@ -12,43 +15,31 @@ export type Produto = {
 }
 
 function App() {
-  const [produtos, setProdutos] = useState<Produto[]>([])
-  const [carrinho, setCarrinho] = useState<Produto[]>([])
-  const [favoritos, setFavoritos] = useState<Produto[]>([])
+  const dispatch = useDispatch<AppDispatch>()
 
-  useEffect(() => {
-    fetch('https://fake-api-tau.vercel.app/api/ebac_sports')
-      .then((res) => res.json())
-      .then((res) => setProdutos(res))
-  }, [])
+  const { data: produtos } = useGetProdutosQuery()
 
-  function adicionarAoCarrinho(produto: Produto) {
-    if (carrinho.find((p) => p.id === produto.id)) {
-      alert('Item já adicionado')
-    } else {
-      setCarrinho([...carrinho, produto])
-    }
+  const favoritos = useSelector((state: RootState) => state.favoritos)
+  const carrinho = useSelector((state: RootState) => state.carrinho)
+
+  const handleAddCarrinho = (produto: Produto) => {
+    dispatch(adicionar(produto))
   }
 
-  function favoritar(produto: Produto) {
-    if (favoritos.find((p) => p.id === produto.id)) {
-      const favoritosSemProduto = favoritos.filter((p) => p.id !== produto.id)
-      setFavoritos(favoritosSemProduto)
-    } else {
-      setFavoritos([...favoritos, produto])
-    }
+  const handleFavoritar = (produto: Produto) => {
+    dispatch(toggleFavorito(produto))
   }
 
   return (
     <>
       <GlobalStyle />
       <div className="container">
-        <Header favoritos={favoritos} itensNoCarrinho={carrinho} />
+        <Header favoritos={favoritos} itensNoCarrinho={carrinho.produtos} />
         <Produtos
-          produtos={produtos}
+          produtos={produtos || []}
           favoritos={favoritos}
-          favoritar={favoritar}
-          adicionarAoCarrinho={adicionarAoCarrinho}
+          favoritar={handleFavoritar}
+          adicionarAoCarrinho={handleAddCarrinho}
         />
       </div>
     </>
